@@ -14,14 +14,23 @@ const Index = () => {
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        setError('');
+        setMessage('');
 
         try {
+            console.log('Attempting admin login...');
             // First try admin login
             try {
                 const adminRes = await axios.post(`${API_URL}/api/admin/login`, {
                     username,
                     password,
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 });
+
+                console.log('Admin login response:', adminRes.data);
 
                 // Store token and user data in localStorage
                 localStorage.setItem('token', adminRes.data.token);
@@ -35,11 +44,18 @@ const Index = () => {
                     return;
                 }
             } catch (adminError) {
+                console.log('Admin login failed, trying user login...');
                 // If admin login fails, try user login
                 const userRes = await axios.post(`${API_URL}/api/auth/login`, {
                     username,
                     password,
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 });
+
+                console.log('User login response:', userRes.data);
 
                 // Store token and user data in localStorage
                 localStorage.setItem('token', userRes.data.token);
@@ -54,6 +70,7 @@ const Index = () => {
                 }
             }
         } catch (err) {
+            console.error('Login error:', err.response?.data || err.message);
             setError(err.response?.data?.message || 'Login failed');
             setMessage('');
         }
