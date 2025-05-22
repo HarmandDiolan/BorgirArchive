@@ -55,13 +55,28 @@ const getUsers = async (req, res) => {
         console.log('MongoDB connection state:', mongoose.connection.readyState);
         console.log('MongoDB URI:', process.env.MONGODB_URI || process.env.MONGODB ? 'URI is set' : 'URI is not set');
         
+        // If not connected, try to reconnect
         if (mongoose.connection.readyState !== 1) {
-            console.error('MongoDB is not connected. Current state:', mongoose.connection.readyState);
-            return res.status(500).json({ 
-                message: 'Database connection error',
-                details: 'MongoDB connection is not established',
-                state: mongoose.connection.readyState
-            });
+            console.log('MongoDB not connected, attempting to reconnect...');
+            try {
+                const mongoUri = process.env.MONGODB_URI || process.env.MONGODB;
+                if (!mongoUri) {
+                    throw new Error('MongoDB connection string not found');
+                }
+                await mongoose.connect(mongoUri, {
+                    serverSelectionTimeoutMS: 5000,
+                    socketTimeoutMS: 45000,
+                });
+                console.log('Reconnected to MongoDB successfully');
+            } catch (reconnectError) {
+                console.error('Failed to reconnect to MongoDB:', reconnectError);
+                return res.status(500).json({ 
+                    message: 'Database connection error',
+                    details: 'Failed to establish database connection',
+                    state: mongoose.connection.readyState,
+                    error: reconnectError.message
+                });
+            }
         }
 
         const users = await User.find({}, { password: 0 }); // Exclude passwords
