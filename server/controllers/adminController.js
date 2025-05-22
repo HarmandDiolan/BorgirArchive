@@ -54,6 +54,7 @@ const getUsers = async (req, res) => {
         console.log('Fetching all users...');
         console.log('Request user:', req.user);
         console.log('MongoDB connection state:', mongoose.connection.readyState);
+        console.log('Authorization header:', req.headers.authorization);
         
         if (!req.user || req.user.role !== 'admin') {
             console.log('Access denied: User is not admin');
@@ -63,9 +64,19 @@ const getUsers = async (req, res) => {
         // Check MongoDB connection
         if (mongoose.connection.readyState !== 1) {
             console.error('MongoDB not connected. Current state:', mongoose.connection.readyState);
-            return res.status(500).json({ message: 'Database connection error' });
+            try {
+                await mongoose.connect(process.env.MONGODB_URI, {
+                    useNewUrlParser: true,
+                    useUnifiedTopology: true,
+                });
+                console.log('MongoDB reconnected successfully');
+            } catch (connectError) {
+                console.error('Failed to reconnect to MongoDB:', connectError);
+                return res.status(500).json({ message: 'Database connection error' });
+            }
         }
 
+        console.log('Attempting to fetch users from database...');
         const users = await User.find({}, { password: 0 }).lean();
         console.log('Found users:', users);
         
@@ -80,7 +91,8 @@ const getUsers = async (req, res) => {
         console.error('Error details:', {
             name: error.name,
             message: error.message,
-            stack: error.stack
+            stack: error.stack,
+            code: error.code
         });
         res.status(500).json({ 
             message: 'Error fetching users',
