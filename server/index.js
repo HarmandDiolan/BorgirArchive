@@ -25,18 +25,27 @@ if (missingEnvVars.length > 0) {
 }
 
 // MongoDB Connection
+let cachedDb = null;
+
 const connectDB = async () => {
+    if (cachedDb) {
+        console.log('Using cached database connection');
+        return cachedDb;
+    }
+
     try {
-        await mongoose.connect(process.env.MONGODB_URI);
+        const client = await mongoose.connect(process.env.MONGODB_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        });
         console.log('✅ Connected to MongoDB');
+        cachedDb = client;
+        return client;
     } catch (error) {
         console.error('❌ MongoDB connection error:', error);
-        process.exit(1);
+        throw error;
     }
 };
-
-// Connect to MongoDB
-connectDB();
 
 const app = express();
 
@@ -78,21 +87,29 @@ app.get('/api/test', (req, res) => {
 });
 
 // Health check route
-app.get('/health', (req, res) => {
-    console.log('Health check accessed');
-    const health = {
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV,
-        missingEnvVars: missingEnvVars.length > 0 ? missingEnvVars : undefined,
-        memory: process.memoryUsage(),
-        uptime: process.uptime(),
-        mongodb: {
-            status: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-            readyState: mongoose.connection.readyState
-        }
-    };
-    res.json(health);
+app.get('/health', async (req, res) => {
+    try {
+        console.log('Health check accessed');
+        const health = {
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            environment: process.env.NODE_ENV,
+            missingEnvVars: missingEnvVars.length > 0 ? missingEnvVars : undefined,
+            memory: process.memoryUsage(),
+            uptime: process.uptime(),
+            mongodb: {
+                status: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+                readyState: mongoose.connection.readyState
+            }
+        };
+        res.json(health);
+    } catch (error) {
+        console.error('Health check error:', error);
+        res.status(500).json({
+            status: 'error',
+            message: error.message
+        });
+    }
 });
 
 // Catch-all route for undefined routes
@@ -116,21 +133,8 @@ app.use((err, req, res, next) => {
     });
 });
 
-const PORT = process.env.PORT || 8000;
-app.listen(PORT, () => {
-    console.log('=================================');
-    console.log(`Server is running on port ${PORT}`);
-    console.log('Environment:', process.env.NODE_ENV);
-    console.log('Available routes:');
-    console.log('- /');
-    console.log('- /health');
-    console.log('- /api/test');
-    console.log('- /api/auth/*');
-    console.log('- /api/admin/*');
-    console.log('- /api/videos/*');
-    
-    if (missingEnvVars.length > 0) {
-        console.warn('Warning: Missing required environment variables:', missingEnvVars);
-    }
-    console.log('=================================');
-}); 
+// Initialize database connection
+connectDB().catch(console.error);
+
+// Export the Express API
+export default app; 
