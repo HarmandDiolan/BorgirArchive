@@ -11,19 +11,15 @@ dotenv.config()
 const port = process.env.PORT
 
 app.use(cors({
-    origin: ['https://borgir-archive-iwo1.vercel.app', 'http://localhost:5173'],
+    origin: ['http://localhost:3000', 'http://localhost:5173'],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
 
 app.use('/api/auth', auth);
-
-app.use('/api/admin', addUser)
-
-app.use('/api/videos', videoRoutes)
+app.use('/api/admin', addUser);
+app.use('/api/videos', videoRoutes);
 
 //Connection
 const connect = async () => {
@@ -38,11 +34,12 @@ const connect = async () => {
 mongoose.connection.on('disconnected', () => {
     console.log('Disconnected from MongoDB')
 })
+
 mongoose.connection.on('connected', () => {
     console.log('Connected to MongoDB')
 })
 
-app.listen(port, () =>{
+app.listen(port, () => {
     connect();
     console.log(`Server is running on port ${port}`);
-})
+});
