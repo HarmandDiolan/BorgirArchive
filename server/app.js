@@ -5,16 +5,14 @@ import dotenv from 'dotenv'
 import auth from './routes/auth.js';
 import addUser from './routes/adminRoutes.js';
 import videoRoutes from './routes/videoRoutes.js';
+import corsOptions from './config/cors.js';
+
 const app = express()
 dotenv.config()
 
 const port = process.env.PORT
 
-app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:5173', 'https://borgir-archive.vercel.app'],
-    credentials: true,
-}));
-
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.use('/api/auth', auth);
