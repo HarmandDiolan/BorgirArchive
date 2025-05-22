@@ -7,6 +7,7 @@ const router = express.Router();
 // Debug middleware for admin routes
 router.use((req, res, next) => {
     console.log('Admin Route:', req.method, req.url);
+    console.log('Headers:', req.headers);
     next();
 });
 
@@ -14,7 +15,16 @@ router.use((req, res, next) => {
 router.post('/login', login);
 
 // Protected admin routes
-router.get('/users', verifyToken, isAdmin, getUsers);
+router.get('/users', verifyToken, isAdmin, async (req, res, next) => {
+    try {
+        console.log('Fetching users...');
+        await getUsers(req, res);
+    } catch (error) {
+        console.error('Error in /users route:', error);
+        next(error);
+    }
+});
+
 router.post('/add-user', verifyToken, isAdmin, addUser);
 
 export default router;

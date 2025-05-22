@@ -11,7 +11,7 @@ dotenv.config()
 const port = process.env.PORT
 
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:5173'],
+    origin: ['http://localhost:3000', 'http://localhost:5173', 'https://borgir-archive.vercel.app'],
     credentials: true,
 }));
 
@@ -23,23 +23,35 @@ app.use('/api/videos', videoRoutes);
 
 //Connection
 const connect = async () => {
-    try{
-        await mongoose.connect(process.env.MONGODB_URI)
-        console.log('Connected to MongoDB');
-    }catch(error){
-        console.log(error);
+    try {
+        if (mongoose.connection.readyState === 0) {
+            await mongoose.connect(process.env.MONGODB_URI);
+            console.log('Connected to MongoDB');
+        }
+    } catch (error) {
+        console.error('MongoDB connection error:', error);
+        process.exit(1); // Exit if we can't connect to the database
     }
 }
 
 mongoose.connection.on('disconnected', () => {
-    console.log('Disconnected from MongoDB')
-})
+    console.log('Disconnected from MongoDB');
+});
 
 mongoose.connection.on('connected', () => {
-    console.log('Connected to MongoDB')
-})
+    console.log('Connected to MongoDB');
+});
 
-app.listen(port, () => {
-    connect();
-    console.log(`Server is running on port ${port}`);
+mongoose.connection.on('error', (err) => {
+    console.error('MongoDB connection error:', err);
+});
+
+// Connect to database before starting the server
+connect().then(() => {
+    app.listen(port, () => {
+        console.log(`Server is running on port ${port}`);
+    });
+}).catch(err => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
 });
