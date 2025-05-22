@@ -30,17 +30,15 @@ const AdminDashboard = () => {
     const fetchUsers = async () => {
         try {
             const token = localStorage.getItem('token');
-            console.log('Fetching users with token:', token);
-            
             const response = await axios.get(`${API_URL}/api/admin/users`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
-            console.log('Users API Response:', response.data);
+            console.log('Fetched users:', response.data);
             setUsers(response.data);
         } catch (error) {
-            console.error('Error fetching users:', error.response?.data || error.message);
+            console.error('Error fetching users:', error);
             setError('Failed to fetch users');
         }
     };

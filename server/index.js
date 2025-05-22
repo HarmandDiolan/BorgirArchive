@@ -5,7 +5,6 @@ import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/adminRoutes.js';
 import videoRoutes from './routes/videoRoutes.js';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
 
 // Load environment variables
 dotenv.config();
@@ -23,29 +22,6 @@ const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
 if (missingEnvVars.length > 0) {
     console.warn('Warning: Missing required environment variables:', missingEnvVars);
 }
-
-// MongoDB Connection
-let cachedDb = null;
-
-const connectDB = async () => {
-    if (cachedDb) {
-        console.log('Using cached database connection');
-        return cachedDb;
-    }
-
-    try {
-        const client = await mongoose.connect(process.env.MONGODB_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
-        console.log('✅ Connected to MongoDB');
-        cachedDb = client;
-        return client;
-    } catch (error) {
-        console.error('❌ MongoDB connection error:', error);
-        throw error;
-    }
-};
 
 const app = express();
 
@@ -87,29 +63,17 @@ app.get('/api/test', (req, res) => {
 });
 
 // Health check route
-app.get('/health', async (req, res) => {
-    try {
-        console.log('Health check accessed');
-        const health = {
-            status: 'ok',
-            timestamp: new Date().toISOString(),
-            environment: process.env.NODE_ENV,
-            missingEnvVars: missingEnvVars.length > 0 ? missingEnvVars : undefined,
-            memory: process.memoryUsage(),
-            uptime: process.uptime(),
-            mongodb: {
-                status: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-                readyState: mongoose.connection.readyState
-            }
-        };
-        res.json(health);
-    } catch (error) {
-        console.error('Health check error:', error);
-        res.status(500).json({
-            status: 'error',
-            message: error.message
-        });
-    }
+app.get('/health', (req, res) => {
+    console.log('Health check accessed');
+    const health = {
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV,
+        missingEnvVars: missingEnvVars.length > 0 ? missingEnvVars : undefined,
+        memory: process.memoryUsage(),
+        uptime: process.uptime()
+    };
+    res.json(health);
 });
 
 // Catch-all route for undefined routes
@@ -133,8 +97,21 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Initialize database connection
-connectDB().catch(console.error);
-
-// Export the Express API
-export default app; 
+const PORT = process.env.PORT || 8000;
+app.listen(PORT, () => {
+    console.log('=================================');
+    console.log(`Server is running on port ${PORT}`);
+    console.log('Environment:', process.env.NODE_ENV);
+    console.log('Available routes:');
+    console.log('- /');
+    console.log('- /health');
+    console.log('- /api/test');
+    console.log('- /api/auth/*');
+    console.log('- /api/admin/*');
+    console.log('- /api/videos/*');
+    
+    if (missingEnvVars.length > 0) {
+        console.warn('Warning: Missing required environment variables:', missingEnvVars);
+    }
+    console.log('=================================');
+}); 

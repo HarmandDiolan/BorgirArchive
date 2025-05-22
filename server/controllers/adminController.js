@@ -3,7 +3,6 @@ import { User } from '../models/User.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../config/jwt.js';
-import mongoose from 'mongoose';
 
 const login = async (req, res) => {
     const { username, password } = req.body;
@@ -51,35 +50,13 @@ function generateRandomPassword(length = 8) {
 
 const getUsers = async (req, res) => {
     try {
-        console.log('🔍 Fetching all users...');
-        console.log('Request user:', req.user);
-        
-        // Check if MongoDB is connected
-        if (!mongoose.connection.readyState) {
-            console.error('❌ MongoDB not connected');
-            return res.status(500).json({ message: 'Database connection error' });
-        }
-
-        const users = await User.find({}, { password: 0 }).lean();
-        console.log('✅ Found users:', users);
-        
-        if (!users) {
-            console.log('⚠️ No users found');
-            return res.json([]);
-        }
-
+        console.log('Fetching all users...');
+        const users = await User.find({}, { password: 0 }); // Exclude passwords
+        console.log('Found users:', users);
         res.json(users);
     } catch (error) {
-        console.error('❌ Error fetching users:', error);
-        console.error('Error details:', {
-            name: error.name,
-            message: error.message,
-            stack: error.stack
-        });
-        res.status(500).json({ 
-            message: 'Error fetching users',
-            error: error.message
-        });
+        console.error('Error fetching users:', error);
+        res.status(500).json({ message: 'Error fetching users' });
     }
 };
 
