@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Temporary hardcoded values for testing
+const CLOUD_NAME = 'dk3wralha';
+const API_KEY = '768221497979577';
+const UPLOAD_PRESET = 'archive';
 
 const UserDashboard = () => {
     const [user, setUser] = useState(null);
@@ -30,11 +34,6 @@ const UserDashboard = () => {
     const [allTags, setAllTags] = useState([]);
 
     const navigate = useNavigate();
-
-    // Cloudinary config
-    const CLOUD_NAME = 'dk3wralha';
-    const API_KEY = '768221497979577';
-    const UPLOAD_PRESET = 'archive'; // Your Cloudinary upload preset name
 
     useEffect(() => {
         // Check if user is authenticated

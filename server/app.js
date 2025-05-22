@@ -8,13 +8,15 @@ import videoRoutes from './routes/videoRoutes.js';
 const app = express()
 dotenv.config()
 
-
 const port = process.env.PORT
 
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: ['https://borgir-archive-iwo1.vercel.app', 'http://localhost:5173'],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(express.json());
 
 app.use('/api/auth', auth);
@@ -27,6 +29,7 @@ app.use('/api/videos', videoRoutes)
 const connect = async () => {
     try{
         await mongoose.connect(process.env.MONGODB)
+        console.log('Connected to MongoDB');
     }catch(error){
         console.log(error);
     }
@@ -36,10 +39,10 @@ mongoose.connection.on('disconnected', () => {
     console.log('Disconnected from MongoDB')
 })
 mongoose.connection.on('connected', () => {
-    console.log('Conneceted from MongoDB')
+    console.log('Connected to MongoDB')
 })
 
 app.listen(port, () =>{
     connect();
-    console.log(`Connected to PORT ${port}`);
+    console.log(`Server is running on port ${port}`);
 })
