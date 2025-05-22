@@ -6,6 +6,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import videoRoutes from './routes/videoRoutes.js';
 import dotenv from 'dotenv';
 import { connectToDatabase, checkConnection } from './utils/db.js';
+import mongoose from 'mongoose';
 
 // Load environment variables
 dotenv.config();
@@ -41,13 +42,20 @@ app.use((req, res, next) => {
 app.use(async (req, res, next) => {
     try {
         console.log('🔄 Attempting database connection for request:', req.method, req.url);
+        
+        // Skip database connection for health check
+        if (req.path === '/health') {
+            return next();
+        }
+        
         await connectToDatabase();
         
         if (!checkConnection()) {
             console.error('❌ Database connection check failed');
             return res.status(500).json({ 
                 message: 'Database connection error',
-                details: 'Connection check failed'
+                details: 'Connection check failed',
+                state: mongoose.connection.readyState
             });
         }
         
@@ -58,11 +66,13 @@ app.use(async (req, res, next) => {
         console.error('Error details:', {
             name: error.name,
             message: error.message,
-            code: error.code
+            code: error.code,
+            stack: error.stack
         });
         res.status(500).json({ 
             message: 'Database connection error',
-            details: error.message
+            details: error.message,
+            state: mongoose.connection.readyState
         });
     }
 });
@@ -81,7 +91,8 @@ app.get('/', (req, res) => {
         timestamp: new Date().toISOString(),
         version: '1.0.0',
         database: {
-            status: checkConnection() ? 'connected' : 'disconnected'
+            status: checkConnection() ? 'connected' : 'disconnected',
+            state: mongoose.connection.readyState
         }
     });
 });
@@ -94,7 +105,8 @@ app.get('/api/test', (req, res) => {
         environment: process.env.NODE_ENV,
         timestamp: new Date().toISOString(),
         database: {
-            status: checkConnection() ? 'connected' : 'disconnected'
+            status: checkConnection() ? 'connected' : 'disconnected',
+            state: mongoose.connection.readyState
         }
     });
 });
@@ -112,6 +124,7 @@ app.get('/health', async (req, res) => {
             uptime: process.uptime(),
             mongodb: {
                 status: checkConnection() ? 'connected' : 'disconnected',
+                state: mongoose.connection.readyState,
                 uri: process.env.MONGODB_URI ? 'URI is set' : 'URI is missing'
             }
         };
