@@ -2,6 +2,7 @@ import express from 'express'
 import mongoose from 'mongoose'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import corsOptions from './config/cors.js'
 import auth from './routes/auth.js';
 import addUser from './routes/adminRoutes.js';
 import videoRoutes from './routes/videoRoutes.js';
@@ -17,10 +18,7 @@ console.log('EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? 'Present' : 'Missing
 
 const port = process.env.PORT || 8000
 
-app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:5173'],
-    credentials: true,
-}));
+app.use(cors(corsOptions));
 
 app.use(express.json());
 
