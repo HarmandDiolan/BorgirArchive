@@ -37,6 +37,7 @@ const connectToDatabase = async () => {
             throw new Error('MONGODB_URI is not defined in environment variables');
         }
 
+        console.log('Attempting to connect to MongoDB...');
         const client = await mongoose.connect(process.env.MONGODB_URI, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
@@ -47,26 +48,50 @@ const connectToDatabase = async () => {
         return client;
     } catch (error) {
         console.error('❌ MongoDB connection error:', error);
+        console.error('Error details:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+        });
         throw error;
     }
 };
 
 // Root route
 app.get('/', (req, res) => {
-    res.json({
-        message: 'Borgir Archive API is running!',
-        status: 'ok',
-        version: '1.0.0',
-        timestamp: new Date().toISOString()
-    });
+    try {
+        res.json({
+            message: 'Borgir Archive API is running!',
+            status: 'ok',
+            version: '1.0.0',
+            timestamp: new Date().toISOString(),
+            environment: process.env.NODE_ENV
+        });
+    } catch (error) {
+        console.error('Error in root route:', error);
+        res.status(500).json({
+            message: 'Internal Server Error',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
 });
 
 // Health check route
 app.get('/health', (req, res) => {
-    res.status(200).json({ 
-        status: 'ok',
-        timestamp: new Date().toISOString()
-    });
+    try {
+        res.status(200).json({ 
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            environment: process.env.NODE_ENV,
+            mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+        });
+    } catch (error) {
+        console.error('Error in health check:', error);
+        res.status(500).json({
+            message: 'Internal Server Error',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
 });
 
 // API Routes
@@ -77,6 +102,11 @@ app.use('/api/videos', videoRoutes);
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Error:', err);
+    console.error('Error details:', {
+        name: err.name,
+        message: err.message,
+        stack: err.stack
+    });
     res.status(500).json({
         message: 'Internal Server Error',
         error: process.env.NODE_ENV === 'development' ? err.message : undefined
@@ -109,6 +139,12 @@ if (process.env.NODE_ENV !== 'production') {
 // Export for Vercel
 export default async function handler(req, res) {
     try {
+        console.log('Incoming request:', {
+            method: req.method,
+            path: req.path,
+            headers: req.headers
+        });
+
         // Connect to database
         await connectToDatabase();
         
@@ -116,6 +152,11 @@ export default async function handler(req, res) {
         return app(req, res);
     } catch (error) {
         console.error('Serverless function error:', error);
+        console.error('Error details:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+        });
         return res.status(500).json({
             message: 'Internal Server Error',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
