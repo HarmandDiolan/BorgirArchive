@@ -3,6 +3,7 @@ import { User } from '../models/User.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../config/jwt.js';
+import mongoose from 'mongoose';
 
 const login = async (req, res) => {
     const { username, password } = req.body;
@@ -51,12 +52,25 @@ function generateRandomPassword(length = 8) {
 const getUsers = async (req, res) => {
     try {
         console.log('Fetching all users...');
+        console.log('MongoDB connection state:', mongoose.connection.readyState);
+        console.log('MongoDB URI:', process.env.MONGODB_URI ? 'URI is set' : 'URI is not set');
+        
+        if (mongoose.connection.readyState !== 1) {
+            console.error('MongoDB is not connected. Current state:', mongoose.connection.readyState);
+            return res.status(500).json({ message: 'Database connection error' });
+        }
+
         const users = await User.find({}, { password: 0 }); // Exclude passwords
         console.log('Found users:', users);
         res.json(users);
     } catch (error) {
         console.error('Error fetching users:', error);
-        res.status(500).json({ message: 'Error fetching users' });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ 
+            message: 'Error fetching users',
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 };
 
