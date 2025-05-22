@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import DataTable from 'react-data-table-component';
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const [users, setUsers] = useState([]);
@@ -28,7 +30,7 @@ const AdminDashboard = () => {
     const fetchUsers = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get('http://localhost:8000/api/admin/users', {
+            const response = await axios.get(`${API_URL}/api/admin/users`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -68,7 +70,7 @@ const AdminDashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.post('http://localhost:8000/api/admin/add-user', 
+            const response = await axios.post(`${API_URL}/api/admin/add-user`, 
                 { ...newUser },
                 {
                     headers: {
@@ -183,68 +185,105 @@ const AdminDashboard = () => {
 
                 {showModal && (
                     <div
-                        className="modal d-flex align-items-center justify-content-center"
-                        style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
                         onClick={closeModal}
                     >
-                        <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
-                            <div className="modal-content p-3">
-                                <h5 className="modal-title mb-3">Add New User</h5>
-                                {error && (
-                                    <div className="alert alert-danger" role="alert">
-                                        {error}
-                                    </div>
-                                )}
-                                <form onSubmit={handleAddUser}>
-                                    <div className="mb-3">
-                                        <label htmlFor="username" className="form-label">Username</label>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            id="username"
-                                            name="username"
-                                            value={newUser.username}
-                                            onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                                            required
-                                        />
-                                    </div>
+                        <div 
+                            style={{
+                                background: 'white',
+                                padding: '20px',
+                                borderRadius: '8px',
+                                width: '400px',
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h3>Add New User</h3>
+                            {error && (
+                                <div style={{ 
+                                    padding: '10px', 
+                                    backgroundColor: '#f8d7da', 
+                                    color: '#721c24',
+                                    borderRadius: '4px',
+                                    marginBottom: '20px'
+                                }}>
+                                    {error}
+                                </div>
+                            )}
+                            <form onSubmit={handleAddUser}>
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label style={{ display: 'block', marginBottom: '5px' }}>Username</label>
+                                    <input
+                                        type="text"
+                                        value={newUser.username}
+                                        onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                                        style={{
+                                            width: '100%',
+                                            padding: '8px',
+                                            borderRadius: '4px',
+                                            border: '1px solid #ddd',
+                                        }}
+                                        required
+                                    />
+                                </div>
 
-                                    <div className="mb-3">
-                                        <label htmlFor="email" className="form-label">Email</label>
-                                        <input
-                                            type="email"
-                                            className="form-control"
-                                            id="email"
-                                            name="email"
-                                            value={newUser.email}
-                                            onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                                            required
-                                        />
-                                    </div>
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label style={{ display: 'block', marginBottom: '5px' }}>Email</label>
+                                    <input
+                                        type="email"
+                                        value={newUser.email}
+                                        onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                                        style={{
+                                            width: '100%',
+                                            padding: '8px',
+                                            borderRadius: '4px',
+                                            border: '1px solid #ddd',
+                                        }}
+                                        required
+                                    />
+                                </div>
 
-                                    <div className="mb-3">
-                                        <label htmlFor="role" className="form-label">Role</label>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            id="role"
-                                            name="role"
-                                            value="user"
-                                            readOnly
-                                            disabled
-                                        />
-                                    </div>
-
-                                    <div className="d-flex justify-content-between">
-                                        <button type="submit" className="btn btn-success" disabled={loading}>
-                                            {loading ? 'Adding...' : 'Add User'}
-                                        </button>
-                                        <button type="button" className="btn btn-danger" onClick={closeModal}>
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        style={{
+                                            background: '#61dafb',
+                                            color: '#000',
+                                            border: 'none',
+                                            padding: '8px 16px',
+                                            borderRadius: '4px',
+                                            cursor: loading ? 'not-allowed' : 'pointer',
+                                            opacity: loading ? 0.7 : 1,
+                                        }}
+                                    >
+                                        {loading ? 'Adding...' : 'Add User'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={closeModal}
+                                        style={{
+                                            background: '#e63946',
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '8px 16px',
+                                            borderRadius: '4px',
+                                            cursor: 'pointer',
+                                        }}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 )}

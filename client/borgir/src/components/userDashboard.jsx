@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const UserDashboard = () => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -35,15 +37,16 @@ const UserDashboard = () => {
     const UPLOAD_PRESET = 'archive'; // Your Cloudinary upload preset name
 
     useEffect(() => {
+        // Check if user is authenticated
         const token = localStorage.getItem('token');
-        const userData = JSON.parse(localStorage.getItem('user'));
+        const user = JSON.parse(localStorage.getItem('user'));
 
-        if (!token || !userData) {
+        if (!token || !user || user.role !== 'user') {
             navigate('/');
             return;
         }
 
-        setUser(userData);
+        setUser(user);
         setLoading(false);
         fetchAllVideos();
     }, [navigate]);
@@ -60,7 +63,7 @@ const UserDashboard = () => {
                 return;
             }
 
-            const response = await axios.get('http://localhost:8000/api/videos', {
+            const response = await axios.get(`${API_URL}/api/videos`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -72,6 +75,7 @@ const UserDashboard = () => {
         } catch (error) {
             console.error('Error fetching videos:', error.response?.data || error.message);
             setLoadingVideos(false);
+            setError('Failed to fetch videos');
         }
     };
 
@@ -91,7 +95,7 @@ const UserDashboard = () => {
         }
 
         try {
-            const response = await axios.post('http://localhost:8000/api/auth/reset-password', {
+            const response = await axios.post(`${API_URL}/api/auth/reset-password`, {
                 username: user.username,
                 newPassword: newPassword,
             });
@@ -159,7 +163,7 @@ const UserDashboard = () => {
                 setVideoUrl(res.data.secure_url);
                 try {
                     const token = localStorage.getItem('token');
-                    await axios.post('http://localhost:8000/api/videos', {
+                    await axios.post(`${API_URL}/api/videos`, {
                         url: res.data.secure_url,
                         title: selectedFile.name,
                         tags: tags.split(',').map(tag => tag.trim()),

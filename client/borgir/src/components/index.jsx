@@ -3,6 +3,8 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';  // <-- import useNavigate
 import 'bootstrap/dist/css/bootstrap.min.css';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const Index = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -16,7 +18,7 @@ const Index = () => {
         try {
             // First try admin login
             try {
-                const adminRes = await axios.post('http://localhost:8000/api/admin/login', {
+                const adminRes = await axios.post(`${API_URL}/api/admin/login`, {
                     username,
                     password,
                 });
@@ -34,7 +36,7 @@ const Index = () => {
                 }
             } catch (adminError) {
                 // If admin login fails, try user login
-                const userRes = await axios.post('http://localhost:8000/api/auth/login', {
+                const userRes = await axios.post(`${API_URL}/api/auth/login`, {
                     username,
                     password,
                 });
