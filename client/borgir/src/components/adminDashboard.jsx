@@ -18,10 +18,7 @@ const AdminDashboard = () => {
         const token = localStorage.getItem('token');
         const user = JSON.parse(localStorage.getItem('user'));
 
-        console.log('Initial token check:', { token, user });
-
         if (!token || !user || user.role !== 'admin') {
-            console.log('Not authenticated or not admin, redirecting...');
             navigate('/');
             return;
         }
@@ -32,62 +29,17 @@ const AdminDashboard = () => {
 
     const fetchUsers = async () => {
         try {
-            setLoading(true);
-            setError('');
             const token = localStorage.getItem('token');
-            
-            if (!token) {
-                console.error('No token found in localStorage');
-                throw new Error('No authentication token found');
-            }
-
-            // Create headers object
-            const headers = {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            };
-
-            console.log('Making request with headers:', headers);
-            
-            const response = await axios({
-                method: 'get',
-                url: `${API_URL}/api/admin/users`,
-                headers: headers,
-                validateStatus: function (status) {
-                    return status < 500; // Resolve only if the status code is less than 500
+            const response = await axios.get(`${API_URL}/api/admin/users`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
                 }
             });
-            
-            console.log('Response status:', response.status);
-            console.log('Response data:', response.data);
-
-            if (response.status === 401) {
-                console.error('Authentication failed, redirecting to login...');
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                navigate('/');
-                return;
-            }
-
-            if (response.status !== 200) {
-                throw new Error(response.data.message || 'Failed to fetch users');
-            }
-
+            console.log('Fetched users:', response.data);
             setUsers(response.data);
         } catch (error) {
             console.error('Error fetching users:', error);
-            if (error.response) {
-                console.error('Error response:', error.response.data);
-                setError(error.response.data.message || 'Failed to fetch users');
-            } else if (error.request) {
-                console.error('No response received:', error.request);
-                setError('No response from server');
-            } else {
-                console.error('Error setting up request:', error.message);
-                setError(error.message);
-            }
-        } finally {
-            setLoading(false);
+            setError('Failed to fetch users');
         }
     };
 
@@ -118,10 +70,6 @@ const AdminDashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
-
             const response = await axios.post(`${API_URL}/api/admin/add-user`, 
                 { ...newUser },
                 {
@@ -137,11 +85,7 @@ const AdminDashboard = () => {
             closeModal();
         } catch (error) {
             console.error('Error adding user:', error);
-            if (error.response) {
-                setError(error.response.data.message || 'Failed to add user');
-            } else {
-                setError(error.message || 'Failed to add user');
-            }
+            setError(error.response?.data?.message || 'Failed to add user');
         } finally {
             setLoading(false);
         }

@@ -5,7 +5,6 @@ import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/adminRoutes.js';
 import videoRoutes from './routes/videoRoutes.js';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
 
 // Load environment variables
 dotenv.config();
@@ -37,24 +36,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// MongoDB Connection
-const connectDB = async () => {
-    try {
-        if (mongoose.connection.readyState === 0) {
-            await mongoose.connect(process.env.MONGODB_URI, {
-                useNewUrlParser: true,
-                useUnifiedTopology: true,
-                serverSelectionTimeoutMS: 5000,
-                socketTimeoutMS: 45000,
-            });
-            console.log('✅ Connected to MongoDB');
-        }
-    } catch (error) {
-        console.error('❌ MongoDB connection error:', error);
-        throw error;
-    }
-};
-
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
@@ -82,29 +63,17 @@ app.get('/api/test', (req, res) => {
 });
 
 // Health check route
-app.get('/health', async (req, res) => {
+app.get('/health', (req, res) => {
     console.log('Health check accessed');
-    try {
-        const health = {
-            status: 'ok',
-            timestamp: new Date().toISOString(),
-            environment: process.env.NODE_ENV,
-            missingEnvVars: missingEnvVars.length > 0 ? missingEnvVars : undefined,
-            memory: process.memoryUsage(),
-            uptime: process.uptime(),
-            mongodb: {
-                status: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-                readyState: mongoose.connection.readyState
-            }
-        };
-        res.json(health);
-    } catch (error) {
-        console.error('Health check error:', error);
-        res.status(500).json({
-            status: 'error',
-            error: error.message
-        });
-    }
+    const health = {
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV,
+        missingEnvVars: missingEnvVars.length > 0 ? missingEnvVars : undefined,
+        memory: process.memoryUsage(),
+        uptime: process.uptime()
+    };
+    res.json(health);
 });
 
 // Catch-all route for undefined routes
@@ -128,49 +97,21 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Connect to MongoDB before handling requests
-app.use(async (req, res, next) => {
-    try {
-        await connectDB();
-        next();
-    } catch (error) {
-        next(error);
-    }
-});
-
 const PORT = process.env.PORT || 8000;
-
-// Start server only after MongoDB connection is established
-const startServer = async () => {
-    try {
-        await connectDB();
-        app.listen(PORT, () => {
-            console.log('=================================');
-            console.log(`Server is running on port ${PORT}`);
-            console.log('Environment:', process.env.NODE_ENV);
-            console.log('Available routes:');
-            console.log('- /');
-            console.log('- /health');
-            console.log('- /api/test');
-            console.log('- /api/auth/*');
-            console.log('- /api/admin/*');
-            console.log('- /api/videos/*');
-            
-            if (missingEnvVars.length > 0) {
-                console.warn('Warning: Missing required environment variables:', missingEnvVars);
-            }
-            console.log('=================================');
-        });
-    } catch (error) {
-        console.error('Failed to start server:', error);
-        process.exit(1);
+app.listen(PORT, () => {
+    console.log('=================================');
+    console.log(`Server is running on port ${PORT}`);
+    console.log('Environment:', process.env.NODE_ENV);
+    console.log('Available routes:');
+    console.log('- /');
+    console.log('- /health');
+    console.log('- /api/test');
+    console.log('- /api/auth/*');
+    console.log('- /api/admin/*');
+    console.log('- /api/videos/*');
+    
+    if (missingEnvVars.length > 0) {
+        console.warn('Warning: Missing required environment variables:', missingEnvVars);
     }
-};
-
-// Only start the server if we're not in a serverless environment
-if (process.env.NODE_ENV !== 'production') {
-    startServer();
-}
-
-// Export the Express API
-export default app; 
+    console.log('=================================');
+}); 
