@@ -158,12 +158,6 @@ export default async function handler(req, res) {
     }
 
     try {
-        console.log('Incoming request:', {
-            method: req.method,
-            path: req.path,
-            headers: req.headers
-        });
-
         // Connect to database
         await connectToDatabase();
         
@@ -171,11 +165,6 @@ export default async function handler(req, res) {
         return app(req, res);
     } catch (error) {
         console.error('Serverless function error:', error);
-        console.error('Error details:', {
-            name: error.name,
-            message: error.message,
-            stack: error.stack
-        });
         return res.status(500).json({
             message: 'Internal Server Error',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
