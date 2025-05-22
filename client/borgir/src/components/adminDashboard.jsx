@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DataTable from 'react-data-table-component';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_BASEURL;
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
