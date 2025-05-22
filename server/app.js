@@ -9,16 +9,12 @@ import videoRoutes from './routes/videoRoutes.js';
 const app = express()
 dotenv.config()
 
-// Detailed environment variable debugging
-console.log('=== Environment Variables Check ===');
-console.log('NODE_ENV:', process.env.NODE_ENV);
-console.log('MONGODB_URI:', process.env.MONGODB_URI ? '✅ Present' : '❌ Missing');
-console.log('JWT_SECRET:', process.env.JWT_SECRET ? '✅ Present' : '❌ Missing');
-console.log('ADMIN_USERNAME:', process.env.ADMIN_USERNAME ? '✅ Present' : '❌ Missing');
-console.log('ADMIN_PASSWORD:', process.env.ADMIN_PASSWORD ? '✅ Present' : '❌ Missing');
-console.log('EMAIL_USER:', process.env.EMAIL_USER ? '✅ Present' : '❌ Missing');
-console.log('EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? '✅ Present' : '❌ Missing');
-console.log('================================');
+// Debug logging
+console.log('Environment variables loaded:');
+console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'Present' : 'Missing');
+console.log('PORT:', process.env.PORT);
+console.log('EMAIL_USER:', process.env.EMAIL_USER);
+console.log('EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? 'Present' : 'Missing');
 
 const port = process.env.PORT || 8000
 
@@ -37,9 +33,6 @@ const connectWithRetry = async () => {
                 throw new Error('MONGODB_URI is not defined in environment variables');
             }
 
-            console.log('Attempting to connect to MongoDB...');
-            console.log('Connection string:', process.env.MONGODB_URI.replace(/:[^:@]*@/, ':****@')); // Hide password in logs
-
             await mongoose.connect(process.env.MONGODB_URI, {
                 useNewUrlParser: true,
                 useUnifiedTopology: true,
@@ -50,7 +43,6 @@ const connectWithRetry = async () => {
         } catch (error) {
             retries++;
             console.error(`❌ MongoDB connection attempt ${retries} failed:`, error.message);
-            console.error('Full error:', error);
             
             if (retries === maxRetries) {
                 console.error('❌ Max retries reached. Could not connect to MongoDB');
@@ -87,27 +79,6 @@ const startServer = async () => {
         process.exit(1);
     }
 };
-
-// Test endpoint to verify MongoDB connection
-app.get('/api/test-db', async (req, res) => {
-    try {
-        const isConnected = mongoose.connection.readyState === 1;
-        res.json({
-            status: isConnected ? 'connected' : 'disconnected',
-            readyState: mongoose.connection.readyState,
-            env: {
-                NODE_ENV: process.env.NODE_ENV,
-                MONGODB_URI: process.env.MONGODB_URI ? 'Present' : 'Missing',
-                // Don't expose sensitive values
-            }
-        });
-    } catch (error) {
-        res.status(500).json({
-            error: error.message,
-            stack: error.stack
-        });
-    }
-});
 
 // Routes
 app.use('/api/auth', auth);
