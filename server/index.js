@@ -32,11 +32,13 @@ app.use(express.json());
 // Debug middleware
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    console.log('Headers:', req.headers);
     next();
 });
 
 // Root route
 app.get('/', (req, res) => {
+    console.log('Root route accessed');
     res.json({ 
         message: 'Borgir Archive API is running!',
         environment: process.env.NODE_ENV,
@@ -46,6 +48,7 @@ app.get('/', (req, res) => {
 
 // Test route
 app.get('/api/test', (req, res) => {
+    console.log('Test route accessed');
     res.json({ 
         message: 'Server is working!',
         environment: process.env.NODE_ENV,
@@ -55,16 +58,20 @@ app.get('/api/test', (req, res) => {
 
 // Health check route
 app.get('/health', (req, res) => {
+    console.log('Health check accessed');
     const health = {
         status: 'ok',
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV,
-        missingEnvVars: missingEnvVars.length > 0 ? missingEnvVars : undefined
+        missingEnvVars: missingEnvVars.length > 0 ? missingEnvVars : undefined,
+        memory: process.memoryUsage(),
+        uptime: process.uptime()
     };
     res.json(health);
 });
 
 // Routes
+console.log('Setting up routes...');
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/videos', videoRoutes);
@@ -92,6 +99,7 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
+    console.log('=================================');
     console.log(`Server is running on port ${PORT}`);
     console.log('Environment:', process.env.NODE_ENV);
     console.log('Available routes:');
@@ -105,4 +113,5 @@ app.listen(PORT, () => {
     if (missingEnvVars.length > 0) {
         console.warn('Warning: Missing required environment variables:', missingEnvVars);
     }
+    console.log('=================================');
 }); 

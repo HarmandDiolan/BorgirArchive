@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';  // <-- import useNavigate
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-const API_URL = 'https://borgir-archive.onrender.com';
+const API_URL = 'https://borgir-archive.vercel.app';
 
 const Index = () => {
     const [username, setUsername] = useState('');
