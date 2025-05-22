@@ -51,12 +51,27 @@ function generateRandomPassword(length = 8) {
 const getUsers = async (req, res) => {
     try {
         console.log('Fetching all users...');
+        console.log('Request user:', req.user); // Log the user making the request
+        
+        if (!req.user || req.user.role !== 'admin') {
+            console.log('Access denied: User is not admin');
+            return res.status(403).json({ message: 'Access denied. Admin only.' });
+        }
+
         const users = await User.find({}, { password: 0 }); // Exclude passwords
         console.log('Found users:', users);
         res.json(users);
     } catch (error) {
         console.error('Error fetching users:', error);
-        res.status(500).json({ message: 'Error fetching users' });
+        console.error('Error details:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+        });
+        res.status(500).json({ 
+            message: 'Error fetching users',
+            error: error.message 
+        });
     }
 };
 
