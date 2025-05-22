@@ -3,6 +3,7 @@ import { User } from '../models/User.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../config/jwt.js';
+import mongoose from 'mongoose';
 
 const login = async (req, res) => {
     const { username, password } = req.body;
@@ -51,15 +52,28 @@ function generateRandomPassword(length = 8) {
 const getUsers = async (req, res) => {
     try {
         console.log('Fetching all users...');
-        console.log('Request user:', req.user); // Log the user making the request
+        console.log('Request user:', req.user);
+        console.log('MongoDB connection state:', mongoose.connection.readyState);
         
         if (!req.user || req.user.role !== 'admin') {
             console.log('Access denied: User is not admin');
             return res.status(403).json({ message: 'Access denied. Admin only.' });
         }
 
-        const users = await User.find({}, { password: 0 }); // Exclude passwords
+        // Check MongoDB connection
+        if (mongoose.connection.readyState !== 1) {
+            console.error('MongoDB not connected. Current state:', mongoose.connection.readyState);
+            return res.status(500).json({ message: 'Database connection error' });
+        }
+
+        const users = await User.find({}, { password: 0 }).lean();
         console.log('Found users:', users);
+        
+        if (!users) {
+            console.log('No users found');
+            return res.json([]);
+        }
+
         res.json(users);
     } catch (error) {
         console.error('Error fetching users:', error);
@@ -70,7 +84,7 @@ const getUsers = async (req, res) => {
         });
         res.status(500).json({ 
             message: 'Error fetching users',
-            error: error.message 
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 };

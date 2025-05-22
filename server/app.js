@@ -27,12 +27,13 @@ app.use(express.json());
 let cachedDb = null;
 
 const connectToDatabase = async () => {
-    if (cachedDb) {
-        console.log('Using cached database connection');
-        return cachedDb;
-    }
-
     try {
+        // If we have a cached connection, check if it's still valid
+        if (cachedDb && mongoose.connection.readyState === 1) {
+            console.log('Using cached database connection');
+            return cachedDb;
+        }
+
         if (!process.env.MONGODB_URI) {
             throw new Error('MONGODB_URI is not defined in environment variables');
         }
@@ -41,10 +42,24 @@ const connectToDatabase = async () => {
         const client = await mongoose.connect(process.env.MONGODB_URI, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
+            serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+            socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
         });
 
         cachedDb = client;
         console.log('✅ Connected to MongoDB successfully');
+        
+        // Set up connection event handlers
+        mongoose.connection.on('error', (err) => {
+            console.error('MongoDB connection error:', err);
+            cachedDb = null;
+        });
+
+        mongoose.connection.on('disconnected', () => {
+            console.log('MongoDB disconnected');
+            cachedDb = null;
+        });
+
         return client;
     } catch (error) {
         console.error('❌ MongoDB connection error:', error);
@@ -53,6 +68,7 @@ const connectToDatabase = async () => {
             message: error.message,
             stack: error.stack
         });
+        cachedDb = null;
         throw error;
     }
 };
