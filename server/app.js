@@ -6,11 +6,8 @@ import corsOptions from './config/cors.js'
 import auth from './routes/auth.js';
 import addUser from './routes/adminRoutes.js';
 import videoRoutes from './routes/videoRoutes.js';
-
-// Load environment variables
-dotenv.config();
-
-const app = express();
+const app = express()
+dotenv.config()
 
 // Debug logging
 console.log('Environment variables loaded:');
@@ -19,84 +16,35 @@ console.log('PORT:', process.env.PORT);
 console.log('EMAIL_USER:', process.env.EMAIL_USER);
 console.log('EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? 'Present' : 'Missing');
 
-// Middleware
+const port = process.env.PORT || 8000
+
 app.use(cors(corsOptions));
+
 app.use(express.json());
 
-// MongoDB Connection
-let cachedDb = null;
-
-const connectToDatabase = async () => {
-    if (cachedDb) {
-        console.log('Using cached database connection');
-        return cachedDb;
-    }
-
-    try {
-        if (!process.env.MONGODB_URI) {
-            throw new Error('MONGODB_URI is not defined in environment variables');
-        }
-
-        const client = await mongoose.connect(process.env.MONGODB_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
-
-        cachedDb = client;
-        console.log('✅ Connected to MongoDB successfully');
-        return client;
-    } catch (error) {
-        console.error('❌ MongoDB connection error:', error);
-        throw error;
-    }
-};
-
-// Routes
 app.use('/api/auth', auth);
 app.use('/api/admin', addUser);
 app.use('/api/videos', videoRoutes);
 
-// Health check route
-app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'ok' });
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    res.status(500).json({
-        message: 'Internal Server Error',
-        error: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
-});
-
-// For local development
-if (process.env.NODE_ENV !== 'production') {
-    const port = process.env.PORT || 8000;
-    app.listen(port, async () => {
-        try {
-            await connectToDatabase();
-            console.log(`✅ Server is running on port ${port}`);
-        } catch (error) {
-            console.error('Failed to start server:', error);
-            process.exit(1);
-        }
-    });
-}
-
-// Export for Vercel
-export default async function handler(req, res) {
-    try {
-        // Connect to database
-        await connectToDatabase();
-        
-        // Handle the request
-        return app(req, res);
-    } catch (error) {
-        console.error('Serverless function error:', error);
-        return res.status(500).json({
-            message: 'Internal Server Error',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
+//Connection
+const connect = async () => {
+    try{
+        await mongoose.connect(process.env.MONGODB_URI)
+        console.log('Connected to MongoDB');
+    }catch(error){
+        console.log(error);
     }
 }
+
+mongoose.connection.on('disconnected', () => {
+    console.log('Disconnected from MongoDB')
+})
+
+mongoose.connection.on('connected', () => {
+    console.log('Connected to MongoDB')
+})
+
+app.listen(port, () => {
+    connect();
+    console.log(`Server is running on port ${port}`);
+});
