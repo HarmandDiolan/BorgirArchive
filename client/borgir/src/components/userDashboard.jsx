@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = 'https://borgir-archive.onrender.com';
 // Temporary hardcoded values for testing
 const CLOUD_NAME = 'dk3wralha';
 const API_KEY = '768221497979577';

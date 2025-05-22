@@ -4,6 +4,12 @@ import { User } from '../models/User.js';
 
 const router = express.Router();
 
+// Debug middleware for auth routes
+router.use((req, res, next) => {
+    console.log('Auth Route:', req.method, req.url);
+    next();
+});
+
 // Login route
 router.post('/login', login);
 
