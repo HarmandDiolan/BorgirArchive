@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/adminRoutes.js';
 import videoRoutes from './routes/videoRoutes.js';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 
 // Load environment variables
 dotenv.config();
@@ -22,6 +23,20 @@ const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
 if (missingEnvVars.length > 0) {
     console.warn('Warning: Missing required environment variables:', missingEnvVars);
 }
+
+// MongoDB Connection
+const connectDB = async () => {
+    try {
+        await mongoose.connect(process.env.MONGODB_URI);
+        console.log('✅ Connected to MongoDB');
+    } catch (error) {
+        console.error('❌ MongoDB connection error:', error);
+        process.exit(1);
+    }
+};
+
+// Connect to MongoDB
+connectDB();
 
 const app = express();
 
@@ -71,7 +86,11 @@ app.get('/health', (req, res) => {
         environment: process.env.NODE_ENV,
         missingEnvVars: missingEnvVars.length > 0 ? missingEnvVars : undefined,
         memory: process.memoryUsage(),
-        uptime: process.uptime()
+        uptime: process.uptime(),
+        mongodb: {
+            status: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+            readyState: mongoose.connection.readyState
+        }
     };
     res.json(health);
 });

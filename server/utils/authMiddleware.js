@@ -18,25 +18,32 @@ export const verifyToken = (req, res, next) => {
     }
 
     console.log('Token:', token);
-    console.log('JWT Secret:', JWT_SECRET);
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         console.log('Decoded token:', decoded);
 
-        // Handle both userId and _id fields
-        const userId = decoded.userId;
-        if (!userId) {
-            console.log('❌ No user ID in token');
-            return res.status(401).json({ message: 'Invalid token: No user ID' });
-        }
+        // Handle both admin and regular user tokens
+        if (decoded.role === 'admin') {
+            req.user = {
+                userId: 'admin',
+                username: decoded.username,
+                role: 'admin'
+            };
+        } else {
+            // Handle regular user tokens
+            const userId = decoded.userId;
+            if (!userId) {
+                console.log('❌ No user ID in token');
+                return res.status(401).json({ message: 'Invalid token: No user ID' });
+            }
 
-        // Set user object with consistent field names
-        req.user = {
-            userId: userId,
-            username: decoded.username,
-            role: decoded.role
-        };
+            req.user = {
+                userId: userId,
+                username: decoded.username,
+                role: decoded.role || 'user'
+            };
+        }
         
         console.log('User object set in request:', req.user);
         next();
