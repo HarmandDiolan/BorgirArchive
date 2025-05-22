@@ -21,7 +21,7 @@ const requiredEnvVars = [
 const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
 
 if (missingEnvVars.length > 0) {
-    console.warn('Warning: Missing required environment variables:', missingEnvVars);
+    console.warn('⚠️ Warning: Missing required environment variables:', missingEnvVars);
 }
 
 const app = express();
@@ -40,11 +40,30 @@ app.use((req, res, next) => {
 // Database connection middleware
 app.use(async (req, res, next) => {
     try {
+        console.log('🔄 Attempting database connection for request:', req.method, req.url);
         await connectToDatabase();
+        
+        if (!checkConnection()) {
+            console.error('❌ Database connection check failed');
+            return res.status(500).json({ 
+                message: 'Database connection error',
+                details: 'Connection check failed'
+            });
+        }
+        
+        console.log('✅ Database connection successful');
         next();
     } catch (error) {
-        console.error('Database connection error:', error);
-        res.status(500).json({ message: 'Database connection error' });
+        console.error('❌ Database connection error:', error);
+        console.error('Error details:', {
+            name: error.name,
+            message: error.message,
+            code: error.code
+        });
+        res.status(500).json({ 
+            message: 'Database connection error',
+            details: error.message
+        });
     }
 });
 
@@ -60,7 +79,10 @@ app.get('/', (req, res) => {
         message: 'Borgir Archive API is running!',
         environment: process.env.NODE_ENV,
         timestamp: new Date().toISOString(),
-        version: '1.0.0'
+        version: '1.0.0',
+        database: {
+            status: checkConnection() ? 'connected' : 'disconnected'
+        }
     });
 });
 
@@ -70,7 +92,10 @@ app.get('/api/test', (req, res) => {
     res.json({ 
         message: 'Server is working!',
         environment: process.env.NODE_ENV,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        database: {
+            status: checkConnection() ? 'connected' : 'disconnected'
+        }
     });
 });
 
@@ -86,7 +111,8 @@ app.get('/health', async (req, res) => {
             memory: process.memoryUsage(),
             uptime: process.uptime(),
             mongodb: {
-                status: checkConnection() ? 'connected' : 'disconnected'
+                status: checkConnection() ? 'connected' : 'disconnected',
+                uri: process.env.MONGODB_URI ? 'URI is set' : 'URI is missing'
             }
         };
         res.json(health);
@@ -94,7 +120,11 @@ app.get('/health', async (req, res) => {
         console.error('Health check error:', error);
         res.status(500).json({
             status: 'error',
-            message: error.message
+            message: error.message,
+            details: {
+                name: error.name,
+                code: error.code
+            }
         });
     }
 });
@@ -116,6 +146,10 @@ app.use((err, req, res, next) => {
     res.status(500).json({ 
         message: 'Internal server error',
         error: err.message,
+        details: {
+            name: err.name,
+            code: err.code
+        },
         timestamp: new Date().toISOString()
     });
 });
