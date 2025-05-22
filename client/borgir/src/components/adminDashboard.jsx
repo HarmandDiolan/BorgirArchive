@@ -30,16 +30,33 @@ const AdminDashboard = () => {
     const fetchUsers = async () => {
         try {
             const token = localStorage.getItem('token');
+            console.log('Fetching users with token:', token);
+            
+            if (!token) {
+                console.error('No token found');
+                setError('Authentication token missing');
+                return;
+            }
+
             const response = await axios.get(`${API_URL}/api/admin/users`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                 }
             });
-            console.log('Fetched users:', response.data);
+            
+            console.log('Fetched users response:', response.data);
             setUsers(response.data);
+            setError('');
         } catch (error) {
-            console.error('Error fetching users:', error);
-            setError('Failed to fetch users');
+            console.error('Error fetching users:', error.response?.data || error.message);
+            setError(error.response?.data?.message || 'Failed to fetch users');
+            if (error.response?.status === 401) {
+                // Token expired or invalid
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                navigate('/');
+            }
         }
     };
 
