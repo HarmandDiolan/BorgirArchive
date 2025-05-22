@@ -8,7 +8,14 @@ import videoRoutes from './routes/videoRoutes.js';
 const app = express()
 dotenv.config()
 
-const port = process.env.PORT
+// Debug logging
+console.log('Environment variables loaded:');
+console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'Present' : 'Missing');
+console.log('PORT:', process.env.PORT);
+console.log('EMAIL_USER:', process.env.EMAIL_USER);
+console.log('EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? 'Present' : 'Missing');
+
+const port = process.env.PORT || 8000
 
 app.use(cors({
     origin: ['http://localhost:3000', 'http://localhost:5173'],
@@ -24,7 +31,7 @@ app.use('/api/videos', videoRoutes);
 //Connection
 const connect = async () => {
     try{
-        await mongoose.connect(process.env.MONGODB)
+        await mongoose.connect(process.env.MONGODB_URI)
         console.log('Connected to MongoDB');
     }catch(error){
         console.log(error);
