@@ -49,8 +49,9 @@ app.use(async (req, res, next) => {
         }
         
         await connectToDatabase();
+        const isConnected = await checkConnection();
         
-        if (!checkConnection()) {
+        if (!isConnected) {
             console.error('❌ Database connection check failed');
             return res.status(500).json({ 
                 message: 'Database connection error',
@@ -83,29 +84,31 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/videos', videoRoutes);
 
 // Root route
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
     console.log('Root route accessed');
+    const isConnected = await checkConnection();
     res.json({ 
         message: 'Borgir Archive API is running!',
         environment: process.env.NODE_ENV,
         timestamp: new Date().toISOString(),
         version: '1.0.0',
         database: {
-            status: checkConnection() ? 'connected' : 'disconnected',
+            status: isConnected ? 'connected' : 'disconnected',
             state: mongoose.connection.readyState
         }
     });
 });
 
 // Test route
-app.get('/api/test', (req, res) => {
+app.get('/api/test', async (req, res) => {
     console.log('Test route accessed');
+    const isConnected = await checkConnection();
     res.json({ 
         message: 'Server is working!',
         environment: process.env.NODE_ENV,
         timestamp: new Date().toISOString(),
         database: {
-            status: checkConnection() ? 'connected' : 'disconnected',
+            status: isConnected ? 'connected' : 'disconnected',
             state: mongoose.connection.readyState
         }
     });
@@ -115,6 +118,7 @@ app.get('/api/test', (req, res) => {
 app.get('/health', async (req, res) => {
     try {
         console.log('Health check accessed');
+        const isConnected = await checkConnection();
         const health = {
             status: 'ok',
             timestamp: new Date().toISOString(),
@@ -123,7 +127,7 @@ app.get('/health', async (req, res) => {
             memory: process.memoryUsage(),
             uptime: process.uptime(),
             mongodb: {
-                status: checkConnection() ? 'connected' : 'disconnected',
+                status: isConnected ? 'connected' : 'disconnected',
                 state: mongoose.connection.readyState,
                 uri: process.env.MONGODB_URI ? 'URI is set' : 'URI is missing'
             }
