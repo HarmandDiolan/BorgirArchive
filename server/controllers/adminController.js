@@ -3,7 +3,7 @@ import { User } from '../models/User.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../config/jwt.js';
-import { connectToDatabase, checkConnection } from '../utils/db.js';
+import mongoose from 'mongoose';
 
 const login = async (req, res) => {
     const { username, password } = req.body;
@@ -54,18 +54,12 @@ const getUsers = async (req, res) => {
         console.log('🔍 Fetching all users...');
         console.log('Request user:', req.user);
         
-        // Ensure database connection
-        await connectToDatabase();
-        
-        if (!checkConnection()) {
+        // Check if MongoDB is connected
+        if (!mongoose.connection.readyState) {
             console.error('❌ MongoDB not connected');
-            return res.status(500).json({ 
-                message: 'Database connection error',
-                details: 'Connection check failed'
-            });
+            return res.status(500).json({ message: 'Database connection error' });
         }
 
-        console.log('✅ Database connection verified, fetching users...');
         const users = await User.find({}, { password: 0 }).lean();
         console.log('✅ Found users:', users);
         
@@ -84,11 +78,7 @@ const getUsers = async (req, res) => {
         });
         res.status(500).json({ 
             message: 'Error fetching users',
-            error: error.message,
-            details: {
-                name: error.name,
-                code: error.code
-            }
+            error: error.message
         });
     }
 };
@@ -101,18 +91,6 @@ const addUser = async (req, res) => {
             return res.status(400).json({ message: 'Username and email are required' });
         }
 
-        // Ensure database connection
-        await connectToDatabase();
-        
-        if (!checkConnection()) {
-            console.error('❌ MongoDB not connected');
-            return res.status(500).json({ 
-                message: 'Database connection error',
-                details: 'Connection check failed'
-            });
-        }
-
-        console.log('✅ Database connection verified, checking for existing user...');
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(409).json({ message: 'User already exists with this email' });
@@ -127,28 +105,14 @@ const addUser = async (req, res) => {
             role: 'user',
         });
 
-        console.log('✅ Creating new user...');
         await newUser.save();
 
-        console.log('✅ Sending password email...');
         await sendPasswordEmail(email, username, rawPassword);
 
         res.status(201).json({ message: 'User created and password sent via email.' });
     } catch (error) {
-        console.error('❌ Error creating user:', error);
-        console.error('Error details:', {
-            name: error.name,
-            message: error.message,
-            stack: error.stack
-        });
-        res.status(500).json({ 
-            message: 'Error creating new user',
-            error: error.message,
-            details: {
-                name: error.name,
-                code: error.code
-            }
-        });
+        console.error(error);
+        res.status(500).json({ message: 'Error creating new user' });
     }
 };
 

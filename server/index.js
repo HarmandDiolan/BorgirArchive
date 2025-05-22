@@ -5,7 +5,6 @@ import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/adminRoutes.js';
 import videoRoutes from './routes/videoRoutes.js';
 import dotenv from 'dotenv';
-import { connectToDatabase, checkConnection } from './utils/db.js';
 import mongoose from 'mongoose';
 
 // Load environment variables
@@ -22,8 +21,31 @@ const requiredEnvVars = [
 const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
 
 if (missingEnvVars.length > 0) {
-    console.warn('⚠️ Warning: Missing required environment variables:', missingEnvVars);
+    console.warn('Warning: Missing required environment variables:', missingEnvVars);
 }
+
+// MongoDB Connection
+let cachedDb = null;
+
+const connectDB = async () => {
+    if (cachedDb) {
+        console.log('Using cached database connection');
+        return cachedDb;
+    }
+
+    try {
+        const client = await mongoose.connect(process.env.MONGODB_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        });
+        console.log('✅ Connected to MongoDB');
+        cachedDb = client;
+        return client;
+    } catch (error) {
+        console.error('❌ MongoDB connection error:', error);
+        throw error;
+    }
+};
 
 const app = express();
 
@@ -38,79 +60,29 @@ app.use((req, res, next) => {
     next();
 });
 
-// Database connection middleware
-app.use(async (req, res, next) => {
-    try {
-        console.log('🔄 Attempting database connection for request:', req.method, req.url);
-        
-        // Skip database connection for health check
-        if (req.path === '/health') {
-            return next();
-        }
-        
-        await connectToDatabase();
-        const isConnected = await checkConnection();
-        
-        if (!isConnected) {
-            console.error('❌ Database connection check failed');
-            return res.status(500).json({ 
-                message: 'Database connection error',
-                details: 'Connection check failed',
-                state: mongoose.connection.readyState
-            });
-        }
-        
-        console.log('✅ Database connection successful');
-        next();
-    } catch (error) {
-        console.error('❌ Database connection error:', error);
-        console.error('Error details:', {
-            name: error.name,
-            message: error.message,
-            code: error.code,
-            stack: error.stack
-        });
-        res.status(500).json({ 
-            message: 'Database connection error',
-            details: error.message,
-            state: mongoose.connection.readyState
-        });
-    }
-});
-
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/videos', videoRoutes);
 
 // Root route
-app.get('/', async (req, res) => {
+app.get('/', (req, res) => {
     console.log('Root route accessed');
-    const isConnected = await checkConnection();
     res.json({ 
         message: 'Borgir Archive API is running!',
         environment: process.env.NODE_ENV,
         timestamp: new Date().toISOString(),
-        version: '1.0.0',
-        database: {
-            status: isConnected ? 'connected' : 'disconnected',
-            state: mongoose.connection.readyState
-        }
+        version: '1.0.0'
     });
 });
 
 // Test route
-app.get('/api/test', async (req, res) => {
+app.get('/api/test', (req, res) => {
     console.log('Test route accessed');
-    const isConnected = await checkConnection();
     res.json({ 
         message: 'Server is working!',
         environment: process.env.NODE_ENV,
-        timestamp: new Date().toISOString(),
-        database: {
-            status: isConnected ? 'connected' : 'disconnected',
-            state: mongoose.connection.readyState
-        }
+        timestamp: new Date().toISOString()
     });
 });
 
@@ -118,7 +90,6 @@ app.get('/api/test', async (req, res) => {
 app.get('/health', async (req, res) => {
     try {
         console.log('Health check accessed');
-        const isConnected = await checkConnection();
         const health = {
             status: 'ok',
             timestamp: new Date().toISOString(),
@@ -127,9 +98,8 @@ app.get('/health', async (req, res) => {
             memory: process.memoryUsage(),
             uptime: process.uptime(),
             mongodb: {
-                status: isConnected ? 'connected' : 'disconnected',
-                state: mongoose.connection.readyState,
-                uri: process.env.MONGODB_URI ? 'URI is set' : 'URI is missing'
+                status: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+                readyState: mongoose.connection.readyState
             }
         };
         res.json(health);
@@ -137,11 +107,7 @@ app.get('/health', async (req, res) => {
         console.error('Health check error:', error);
         res.status(500).json({
             status: 'error',
-            message: error.message,
-            details: {
-                name: error.name,
-                code: error.code
-            }
+            message: error.message
         });
     }
 });
@@ -163,13 +129,12 @@ app.use((err, req, res, next) => {
     res.status(500).json({ 
         message: 'Internal server error',
         error: err.message,
-        details: {
-            name: err.name,
-            code: err.code
-        },
         timestamp: new Date().toISOString()
     });
 });
+
+// Initialize database connection
+connectDB().catch(console.error);
 
 // Export the Express API
 export default app; 

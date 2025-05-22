@@ -7,19 +7,14 @@ const router = express.Router();
 // Debug middleware for admin routes
 router.use((req, res, next) => {
     console.log('Admin Route:', req.method, req.url);
-    console.log('Headers:', req.headers);
     next();
 });
 
 // Public admin login route (no auth required)
 router.post('/login', login);
 
-// Protected admin routes - verify token first, then check admin role
-router.use('/users', verifyToken, isAdmin);
-router.use('/add-user', verifyToken, isAdmin);
-
-// Protected routes
-router.get('/users', getUsers);
-router.post('/add-user', addUser);
+// Protected admin routes
+router.get('/users', verifyToken, isAdmin, getUsers);
+router.post('/add-user', verifyToken, isAdmin, addUser);
 
 export default router;

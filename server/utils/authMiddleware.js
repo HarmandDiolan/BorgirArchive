@@ -3,7 +3,7 @@ import { JWT_SECRET } from '../config/jwt.js';
 
 export const verifyToken = (req, res, next) => {
     console.log('🔒 Verifying token...');
-    console.log('Headers:', req.headers);
+    console.log('Authorization header:', req.headers.authorization);
     
     const authHeader = req.headers.authorization;
     if (!authHeader) {
@@ -49,15 +49,7 @@ export const verifyToken = (req, res, next) => {
         next();
     } catch (error) {
         console.error('Token verification error:', error);
-        console.error('Error details:', {
-            name: error.name,
-            message: error.message,
-            stack: error.stack
-        });
-        return res.status(401).json({ 
-            message: 'Invalid token',
-            details: error.message
-        });
+        return res.status(401).json({ message: 'Invalid token' });
     }
 };
 
