@@ -9,15 +9,26 @@
     "routes": [
         {
             "src": "/api/(.*)",
-            "dest": "index.js"
+            "dest": "index.js",
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+            }
         },
         {
             "src": "/health",
-            "dest": "index.js"
+            "dest": "index.js",
+            "methods": ["GET"]
         },
         {
             "src": "/(.*)",
-            "dest": "index.js"
+            "dest": "index.js",
+            "methods": ["GET"]
         }
-    ]
+    ],
+    "env": {
+        "NODE_ENV": "production"
+    }
 }

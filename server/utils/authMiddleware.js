@@ -3,12 +3,19 @@ import { JWT_SECRET } from '../config/jwt.js';
 
 export const verifyToken = (req, res, next) => {
     console.log('🔒 Verifying token...');
+    console.log('All headers:', req.headers);
     console.log('Authorization header:', req.headers.authorization);
     
     const authHeader = req.headers.authorization;
     if (!authHeader) {
         console.log('❌ No authorization header');
         return res.status(401).json({ message: 'No authorization header' });
+    }
+
+    // Check if the header starts with 'Bearer '
+    if (!authHeader.startsWith('Bearer ')) {
+        console.log('❌ Invalid authorization format. Should start with "Bearer "');
+        return res.status(401).json({ message: 'Invalid authorization format' });
     }
 
     const token = authHeader.split(' ')[1];
@@ -42,7 +49,10 @@ export const verifyToken = (req, res, next) => {
         next();
     } catch (error) {
         console.error('Token verification error:', error);
-        return res.status(401).json({ message: 'Invalid token' });
+        return res.status(401).json({ 
+            message: 'Invalid token',
+            error: error.message
+        });
     }
 };
 
