@@ -1,6 +1,8 @@
 import { sendPasswordEmail } from "../utils/sendEmail.js";
 import { User } from '../models/User.js';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../config/jwt.js';
 
 const login = async (req, res) => {
     const { username, password } = req.body;
@@ -10,10 +12,26 @@ const login = async (req, res) => {
         password === process.env.ADMIN_PASSWORD
     ) {
         console.log('✅ Admin login success');
+        
+        // Create JWT token for admin
+        const token = jwt.sign(
+            { 
+                userId: 'admin',
+                username: process.env.ADMIN_USERNAME,
+                role: 'admin'
+            },
+            JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
         return res.json({
             message: 'Admin login successfully',
-            role: 'admin',
-            username,
+            token,
+            user: {
+                userId: 'admin',
+                username: process.env.ADMIN_USERNAME,
+                role: 'admin'
+            }
         });
     }
 
@@ -30,6 +48,18 @@ function generateRandomPassword(length = 8) {
     return password;
 }
 
+const getUsers = async (req, res) => {
+    try {
+        console.log('Fetching all users...');
+        const users = await User.find({}, { password: 0 }); // Exclude passwords
+        console.log('Found users:', users);
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ message: 'Error fetching users' });
+    }
+};
+
 const addUser = async (req, res) => {
     try {
         const { username, email } = req.body;
@@ -44,12 +74,11 @@ const addUser = async (req, res) => {
         }
 
         const rawPassword = generateRandomPassword();
-        const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
         const newUser = new User({
             username,
             email,
-            password: hashedPassword,
+            password: rawPassword, // The pre-save middleware will hash this
             role: 'user',
         });
 
@@ -64,4 +93,4 @@ const addUser = async (req, res) => {
     }
 };
 
-export { login, addUser };
+export { login, addUser, getUsers };

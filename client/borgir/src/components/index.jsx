@@ -14,27 +14,46 @@ const Index = () => {
         e.preventDefault();
 
         try {
-        const res = await axios.post('http://localhost:8000/api/auth/login', {
-            username,
-            password,
-        });
+            // First try admin login
+            try {
+                const adminRes = await axios.post('http://localhost:8000/api/admin/login', {
+                    username,
+                    password,
+                });
 
-        setMessage(res.data.message + ` (Role: ${res.data.role})`);
-        setError('');
+                // Store token and user data in localStorage
+                localStorage.setItem('token', adminRes.data.token);
+                localStorage.setItem('user', JSON.stringify(adminRes.data.user));
 
-        // Redirect based on role:
-        if (res.data.role === 'admin') {
-            navigate('/admin');
-        } else if (res.data.role === 'user') {
-            navigate('/user-dashboard');
-        } else {
-            // fallback if role unknown
-            navigate('/');
-        }
+                setMessage(adminRes.data.message);
+                setError('');
 
+                if (adminRes.data.user.role === 'admin') {
+                    navigate('/admin');
+                    return;
+                }
+            } catch (adminError) {
+                // If admin login fails, try user login
+                const userRes = await axios.post('http://localhost:8000/api/auth/login', {
+                    username,
+                    password,
+                });
+
+                // Store token and user data in localStorage
+                localStorage.setItem('token', userRes.data.token);
+                localStorage.setItem('user', JSON.stringify(userRes.data.user));
+
+                setMessage(userRes.data.message);
+                setError('');
+
+                if (userRes.data.user.role === 'user') {
+                    navigate('/user-dashboard');
+                    return;
+                }
+            }
         } catch (err) {
-        setError(err.response?.data?.message || 'Login failed');
-        setMessage('');
+            setError(err.response?.data?.message || 'Login failed');
+            setMessage('');
         }
     };
 

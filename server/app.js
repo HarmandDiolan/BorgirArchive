@@ -4,6 +4,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import auth from './routes/auth.js';
 import addUser from './routes/adminRoutes.js';
+import videoRoutes from './routes/videoRoutes.js';
 const app = express()
 dotenv.config()
 
@@ -19,6 +20,8 @@ app.use(express.json());
 app.use('/api/auth', auth);
 
 app.use('/api/admin', addUser)
+
+app.use('/api/videos', videoRoutes)
 
 //Connection
 const connect = async () => {
