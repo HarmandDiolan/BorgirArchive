@@ -42,24 +42,12 @@ const connectToDatabase = async () => {
         const client = await mongoose.connect(process.env.MONGODB_URI, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
-            serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
-            socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+            serverSelectionTimeoutMS: 5000,
+            socketTimeoutMS: 45000,
         });
 
         cachedDb = client;
         console.log('✅ Connected to MongoDB successfully');
-        
-        // Set up connection event handlers
-        mongoose.connection.on('error', (err) => {
-            console.error('MongoDB connection error:', err);
-            cachedDb = null;
-        });
-
-        mongoose.connection.on('disconnected', () => {
-            console.log('MongoDB disconnected');
-            cachedDb = null;
-        });
-
         return client;
     } catch (error) {
         console.error('❌ MongoDB connection error:', error);
@@ -154,6 +142,21 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Export for Vercel
 export default async function handler(req, res) {
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
+    );
+
+    // Handle OPTIONS request
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+
     try {
         console.log('Incoming request:', {
             method: req.method,
