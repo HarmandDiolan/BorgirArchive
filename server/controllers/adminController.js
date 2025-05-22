@@ -53,11 +53,15 @@ const getUsers = async (req, res) => {
     try {
         console.log('Fetching all users...');
         console.log('MongoDB connection state:', mongoose.connection.readyState);
-        console.log('MongoDB URI:', process.env.MONGODB_URI ? 'URI is set' : 'URI is not set');
+        console.log('MongoDB URI:', process.env.MONGODB_URI || process.env.MONGODB ? 'URI is set' : 'URI is not set');
         
         if (mongoose.connection.readyState !== 1) {
             console.error('MongoDB is not connected. Current state:', mongoose.connection.readyState);
-            return res.status(500).json({ message: 'Database connection error' });
+            return res.status(500).json({ 
+                message: 'Database connection error',
+                details: 'MongoDB connection is not established',
+                state: mongoose.connection.readyState
+            });
         }
 
         const users = await User.find({}, { password: 0 }); // Exclude passwords
@@ -69,7 +73,8 @@ const getUsers = async (req, res) => {
         res.status(500).json({ 
             message: 'Error fetching users',
             error: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            details: error.stack,
+            connectionState: mongoose.connection.readyState
         });
     }
 };

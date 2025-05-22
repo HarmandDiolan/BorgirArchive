@@ -23,7 +23,12 @@ app.use('/api/videos', videoRoutes);
 const connect = async () => {
     try {
         if (mongoose.connection.readyState === 0) {
-            await mongoose.connect(process.env.MONGODB_URI);
+            const mongoUri = process.env.MONGODB_URI || process.env.MONGODB;
+            if (!mongoUri) {
+                throw new Error('MongoDB connection string not found in environment variables');
+            }
+            console.log('Attempting to connect to MongoDB...');
+            await mongoose.connect(mongoUri);
             console.log('Connected to MongoDB');
         }
     } catch (error) {
