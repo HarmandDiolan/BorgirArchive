@@ -9,8 +9,8 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "build": "echo 'No build step required'",
-    "vercel-build": "echo 'No build step required'"
+    "build": "echo 'Building...'",
+    "vercel-build": "echo 'Building for Vercel...'"
   },
   "keywords": [],
   "author": "",
