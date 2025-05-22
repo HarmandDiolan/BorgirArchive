@@ -6,8 +6,11 @@ import corsOptions from './config/cors.js'
 import auth from './routes/auth.js';
 import addUser from './routes/adminRoutes.js';
 import videoRoutes from './routes/videoRoutes.js';
-const app = express()
-dotenv.config()
+
+// Load environment variables
+dotenv.config();
+
+const app = express();
 
 // Debug logging
 console.log('Environment variables loaded:');
@@ -16,67 +19,35 @@ console.log('PORT:', process.env.PORT);
 console.log('EMAIL_USER:', process.env.EMAIL_USER);
 console.log('EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? 'Present' : 'Missing');
 
-const port = process.env.PORT || 8000
-
+// Middleware
 app.use(cors(corsOptions));
-
 app.use(express.json());
 
-// MongoDB Connection with retry logic
-const connectWithRetry = async () => {
-    const maxRetries = 5;
-    let retries = 0;
+// MongoDB Connection
+let cachedDb = null;
 
-    while (retries < maxRetries) {
-        try {
-            if (!process.env.MONGODB_URI) {
-                throw new Error('MONGODB_URI is not defined in environment variables');
-            }
-
-            await mongoose.connect(process.env.MONGODB_URI, {
-                useNewUrlParser: true,
-                useUnifiedTopology: true,
-            });
-            
-            console.log('✅ Connected to MongoDB successfully');
-            return true;
-        } catch (error) {
-            retries++;
-            console.error(`❌ MongoDB connection attempt ${retries} failed:`, error.message);
-            
-            if (retries === maxRetries) {
-                console.error('❌ Max retries reached. Could not connect to MongoDB');
-                return false;
-            }
-            
-            // Wait for 5 seconds before retrying
-            await new Promise(resolve => setTimeout(resolve, 5000));
-        }
+const connectToDatabase = async () => {
+    if (cachedDb) {
+        console.log('Using cached database connection');
+        return cachedDb;
     }
-    return false;
-};
 
-// Connection event handlers
-mongoose.connection.on('disconnected', () => {
-    console.log('❌ Disconnected from MongoDB');
-    // Attempt to reconnect
-    connectWithRetry();
-});
+    try {
+        if (!process.env.MONGODB_URI) {
+            throw new Error('MONGODB_URI is not defined in environment variables');
+        }
 
-mongoose.connection.on('error', (err) => {
-    console.error('❌ MongoDB connection error:', err);
-});
-
-// Start server only after successful database connection
-const startServer = async () => {
-    const connected = await connectWithRetry();
-    if (connected) {
-        app.listen(port, () => {
-            console.log(`✅ Server is running on port ${port}`);
+        const client = await mongoose.connect(process.env.MONGODB_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
         });
-    } else {
-        console.error('❌ Server startup failed due to database connection issues');
-        process.exit(1);
+
+        cachedDb = client;
+        console.log('✅ Connected to MongoDB successfully');
+        return client;
+    } catch (error) {
+        console.error('❌ MongoDB connection error:', error);
+        throw error;
     }
 };
 
@@ -85,5 +56,47 @@ app.use('/api/auth', auth);
 app.use('/api/admin', addUser);
 app.use('/api/videos', videoRoutes);
 
-// Start the server
-startServer();
+// Health check route
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Error:', err);
+    res.status(500).json({
+        message: 'Internal Server Error',
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+});
+
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+    const port = process.env.PORT || 8000;
+    app.listen(port, async () => {
+        try {
+            await connectToDatabase();
+            console.log(`✅ Server is running on port ${port}`);
+        } catch (error) {
+            console.error('Failed to start server:', error);
+            process.exit(1);
+        }
+    });
+}
+
+// Export for Vercel
+export default async function handler(req, res) {
+    try {
+        // Connect to database
+        await connectToDatabase();
+        
+        // Handle the request
+        return app(req, res);
+    } catch (error) {
+        console.error('Serverless function error:', error);
+        return res.status(500).json({
+            message: 'Internal Server Error',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+}
