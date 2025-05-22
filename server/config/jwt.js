@@ -1,7 +1,2 @@
 // JWT configuration
-if (!process.env.JWT_SECRET) {
-    console.error('JWT_SECRET environment variable is not set!');
-    process.exit(1);
-}
-
-export const JWT_SECRET = process.env.JWT_SECRET; 
+export const JWT_SECRET = process.env.JWT_SECRET || 'borgir_archive_default_secret_key_2024'; 

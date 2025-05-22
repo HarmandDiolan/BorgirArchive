@@ -3,7 +3,6 @@ import { User } from '../models/User.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../config/jwt.js';
-import mongoose from 'mongoose';
 
 const login = async (req, res) => {
     const { username, password } = req.body;
@@ -52,45 +51,12 @@ function generateRandomPassword(length = 8) {
 const getUsers = async (req, res) => {
     try {
         console.log('Fetching all users...');
-        console.log('MongoDB connection state:', mongoose.connection.readyState);
-        console.log('MongoDB URI:', process.env.MONGODB_URI || process.env.MONGODB ? 'URI is set' : 'URI is not set');
-        
-        // If not connected, try to reconnect
-        if (mongoose.connection.readyState !== 1) {
-            console.log('MongoDB not connected, attempting to reconnect...');
-            try {
-                const mongoUri = process.env.MONGODB_URI || process.env.MONGODB;
-                if (!mongoUri) {
-                    throw new Error('MongoDB connection string not found');
-                }
-                await mongoose.connect(mongoUri, {
-                    serverSelectionTimeoutMS: 5000,
-                    socketTimeoutMS: 45000,
-                });
-                console.log('Reconnected to MongoDB successfully');
-            } catch (reconnectError) {
-                console.error('Failed to reconnect to MongoDB:', reconnectError);
-                return res.status(500).json({ 
-                    message: 'Database connection error',
-                    details: 'Failed to establish database connection',
-                    state: mongoose.connection.readyState,
-                    error: reconnectError.message
-                });
-            }
-        }
-
         const users = await User.find({}, { password: 0 }); // Exclude passwords
         console.log('Found users:', users);
         res.json(users);
     } catch (error) {
         console.error('Error fetching users:', error);
-        console.error('Error stack:', error.stack);
-        res.status(500).json({ 
-            message: 'Error fetching users',
-            error: error.message,
-            details: error.stack,
-            connectionState: mongoose.connection.readyState
-        });
+        res.status(500).json({ message: 'Error fetching users' });
     }
 };
 
