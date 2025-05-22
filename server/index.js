@@ -36,13 +36,19 @@ app.use((req, res, next) => {
     next();
 });
 
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/videos', videoRoutes);
+
 // Root route
 app.get('/', (req, res) => {
     console.log('Root route accessed');
     res.json({ 
         message: 'Borgir Archive API is running!',
         environment: process.env.NODE_ENV,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        version: '1.0.0'
     });
 });
 
@@ -70,18 +76,12 @@ app.get('/health', (req, res) => {
     res.json(health);
 });
 
-// Routes
-console.log('Setting up routes...');
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/videos', videoRoutes);
-
-// 404 handler
-app.use((req, res) => {
-    console.log('404 Not Found:', req.method, req.url);
+// Catch-all route for undefined routes
+app.use('*', (req, res) => {
+    console.log('404 Not Found:', req.method, req.originalUrl);
     res.status(404).json({ 
         message: 'Route not found',
-        path: req.url,
+        path: req.originalUrl,
         method: req.method,
         timestamp: new Date().toISOString()
     });
