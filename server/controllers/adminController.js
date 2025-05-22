@@ -3,7 +3,7 @@ import { User } from '../models/User.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../config/jwt.js';
-import mongoose from 'mongoose';
+import { connectToDatabase, checkConnection } from '../utils/db.js';
 
 const login = async (req, res) => {
     const { username, password } = req.body;
@@ -54,8 +54,10 @@ const getUsers = async (req, res) => {
         console.log('🔍 Fetching all users...');
         console.log('Request user:', req.user);
         
-        // Check if MongoDB is connected
-        if (!mongoose.connection.readyState) {
+        // Ensure database connection
+        await connectToDatabase();
+        
+        if (!checkConnection()) {
             console.error('❌ MongoDB not connected');
             return res.status(500).json({ message: 'Database connection error' });
         }
@@ -89,6 +91,14 @@ const addUser = async (req, res) => {
 
         if (!username || !email) {
             return res.status(400).json({ message: 'Username and email are required' });
+        }
+
+        // Ensure database connection
+        await connectToDatabase();
+        
+        if (!checkConnection()) {
+            console.error('❌ MongoDB not connected');
+            return res.status(500).json({ message: 'Database connection error' });
         }
 
         const existingUser = await User.findOne({ email });

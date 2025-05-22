@@ -5,7 +5,7 @@ import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/adminRoutes.js';
 import videoRoutes from './routes/videoRoutes.js';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
+import { connectToDatabase, checkConnection } from './utils/db.js';
 
 // Load environment variables
 dotenv.config();
@@ -24,29 +24,6 @@ if (missingEnvVars.length > 0) {
     console.warn('Warning: Missing required environment variables:', missingEnvVars);
 }
 
-// MongoDB Connection
-let cachedDb = null;
-
-const connectDB = async () => {
-    if (cachedDb) {
-        console.log('Using cached database connection');
-        return cachedDb;
-    }
-
-    try {
-        const client = await mongoose.connect(process.env.MONGODB_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
-        console.log('✅ Connected to MongoDB');
-        cachedDb = client;
-        return client;
-    } catch (error) {
-        console.error('❌ MongoDB connection error:', error);
-        throw error;
-    }
-};
-
 const app = express();
 
 // Middleware
@@ -58,6 +35,17 @@ app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
     console.log('Headers:', req.headers);
     next();
+});
+
+// Database connection middleware
+app.use(async (req, res, next) => {
+    try {
+        await connectToDatabase();
+        next();
+    } catch (error) {
+        console.error('Database connection error:', error);
+        res.status(500).json({ message: 'Database connection error' });
+    }
 });
 
 // API Routes
@@ -98,8 +86,7 @@ app.get('/health', async (req, res) => {
             memory: process.memoryUsage(),
             uptime: process.uptime(),
             mongodb: {
-                status: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-                readyState: mongoose.connection.readyState
+                status: checkConnection() ? 'connected' : 'disconnected'
             }
         };
         res.json(health);
@@ -132,9 +119,6 @@ app.use((err, req, res, next) => {
         timestamp: new Date().toISOString()
     });
 });
-
-// Initialize database connection
-connectDB().catch(console.error);
 
 // Export the Express API
 export default app; 
