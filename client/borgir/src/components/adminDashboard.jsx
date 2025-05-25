@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DataTable from 'react-data-table-component';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = 'https://borgirarchive.onrender.com';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -30,7 +30,7 @@ const AdminDashboard = () => {
     const fetchUsers = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.get(`http://localhost:8000/api/admin/users`, {
+            const response = await axios.get(`${API_URL}/api/admin/users`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -70,7 +70,7 @@ const AdminDashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.post(`http://localhost:8000/api/admin/add-user`, 
+            const response = await axios.post(`${API_URL}/api/admin/add-user`, 
                 { ...newUser },
                 {
                     headers: {

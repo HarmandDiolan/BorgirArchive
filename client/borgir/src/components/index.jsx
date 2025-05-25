@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';  // <-- import useNavigate
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = 'https://borgirarchive.onrender.com';
 
 const Index = () => {
     const [username, setUsername] = useState('');

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = 'https://borgirarchive.onrender.com';
 
 const UserDashboard = () => {
     const [user, setUser] = useState(null);
@@ -63,7 +63,7 @@ const UserDashboard = () => {
                 return;
             }
 
-            const response = await axios.get(`http://localhost:8000/api/videos`, {
+            const response = await axios.get(`${API_URL}/api/videos`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -95,7 +95,7 @@ const UserDashboard = () => {
         }
 
         try {
-            const response = await axios.post(`http://localhost:8000/api/auth/reset-password`, {
+            const response = await axios.post(`${API_URL}/api/auth/reset-password`, {
                 username: user.username,
                 newPassword: newPassword,
             });
