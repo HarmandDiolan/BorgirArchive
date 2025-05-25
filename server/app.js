@@ -14,9 +14,15 @@ const port = process.env.PORT
 app.use(cors({
     origin: ['https://borgirarchive-1.onrender.com', 'http://localhost:3000'],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    maxAge: 86400 // 24 hours
 }));
+
+// Add a pre-flight OPTIONS handler for all routes
+app.options('*', cors());
+
 app.use(express.json());
 
 app.use('/api/auth', auth);
