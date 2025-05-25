@@ -163,7 +163,7 @@ const UserDashboard = () => {
                 setVideoUrl(res.data.secure_url);
                 try {
                     const token = localStorage.getItem('token');
-                    await axios.post(`http://localhost:8000/api/videos`, {
+                    await axios.post(`${API_URL}/api/videos`, {
                         url: res.data.secure_url,
                         title: selectedFile.name,
                         tags: tags.split(',').map(tag => tag.trim()),
