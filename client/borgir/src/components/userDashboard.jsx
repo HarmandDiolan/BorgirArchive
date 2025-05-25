@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = 'http://localhost:8000';
 
 const UserDashboard = () => {
     const [user, setUser] = useState(null);
@@ -63,7 +63,7 @@ const UserDashboard = () => {
                 return;
             }
 
-            const response = await axios.get(`${API_URL}/api/videos`, {
+            const response = await axios.get(`http://localhost:8000/api/videos`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -95,7 +95,7 @@ const UserDashboard = () => {
         }
 
         try {
-            const response = await axios.post(`${API_URL}/api/auth/reset-password`, {
+            const response = await axios.post(`http://localhost:8000/api/auth/reset-password`, {
                 username: user.username,
                 newPassword: newPassword,
             });
@@ -163,7 +163,7 @@ const UserDashboard = () => {
                 setVideoUrl(res.data.secure_url);
                 try {
                     const token = localStorage.getItem('token');
-                    await axios.post(`${API_URL}/api/videos`, {
+                    await axios.post(`http://localhost:8000/api/videos`, {
                         url: res.data.secure_url,
                         title: selectedFile.name,
                         tags: tags.split(',').map(tag => tag.trim()),
