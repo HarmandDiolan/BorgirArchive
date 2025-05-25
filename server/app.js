@@ -12,8 +12,10 @@ dotenv.config()
 const port = process.env.PORT
 
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: ['https://borgirarchive-1.onrender.com', 'http://localhost:3000'],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
